@@ -1,0 +1,14 @@
+services:
+  database:
+    image: postgres:15-alpine
+    volumes:
+      - db-data:/var/lib/postgresql/data:rw
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: axum_blog
+    ports:
+      - "5432:5432"
+
+volumes:
+  db-data:
