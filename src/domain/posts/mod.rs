@@ -1,11 +1,13 @@
+use std::fmt;
+
 mod post_repository;
 
 pub use post_repository::PostRepository;
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug)]
 pub struct Post {
     pub id: uuid::Uuid,
-    pub title: String,
+    pub title: PostTitle,
     pub content: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub last_update: chrono::DateTime<chrono::Utc>,
@@ -25,9 +27,29 @@ impl Post {
     }
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Debug)]
+pub struct PostTitle(String);
+
+impl PostTitle {
+
+}
+
+impl fmt::Display for PostTitle {
+
+}
+
+#[derive(Debug)]
 pub struct CreatePostDTO {
     pub id: Option<uuid::Uuid>,
     pub title: String,
     pub content: String,
+}
+
+impl CreatePostValidatedDTO {
+    pub async fn new(dto: CreatePostDTO, post_repository: &mut impl PostRepository) -> Result<Self, {
+        post_repository.exists_with_id(dto.);
+        Self {
+
+        }
+    }
 }

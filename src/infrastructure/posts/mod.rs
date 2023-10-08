@@ -5,11 +5,13 @@ use sqlx::PgPool;
 
 use crate::{
     application::posts::create_post,
-    domain::{
-        persistence::PersistenceError,
-        posts::{CreatePostDTO, Post},
-    },
+    domain::{persistence::PersistenceError, posts::Post},
 };
+
+#[derive(Debug, serde::Deserialize)]
+struct CreatePostDTO {
+    id: Option<uuid::Uuid>,
+}
 
 #[axum::debug_handler]
 pub async fn create_post_route(
