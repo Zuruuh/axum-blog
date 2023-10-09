@@ -3,7 +3,7 @@ use sqlx::{Pool, Postgres};
 
 use crate::domain::{
     persistence::PersistenceError,
-    posts::{CreatePostDTO, Post, PostRepository},
+    posts::{Post, PostRepository, ValidatedCreatePostDTO},
 };
 
 #[derive(Clone)]
@@ -12,12 +12,17 @@ pub struct PersistentPostRepository<'a> {
 }
 
 impl<'a> PersistentPostRepository<'a> {
-    pub fn new(pool: &'a Pool<Postgres>) -> Self { Self { pool } }
+    pub fn new(pool: &'a Pool<Postgres>) -> Self {
+        Self { pool }
+    }
 }
 
 #[async_trait]
 impl<'a> PostRepository for PersistentPostRepository<'a> {
-    async fn persist(&mut self, create_post_dto: CreatePostDTO) -> Result<Post, PersistenceError> {
+    async fn persist(
+        &mut self,
+        create_post_dto: ValidatedCreatePostDTO,
+    ) -> Result<Post, PersistenceError> {
         let post = Post::new(create_post_dto);
 
         sqlx::query!(
@@ -36,5 +41,27 @@ impl<'a> PostRepository for PersistentPostRepository<'a> {
         .map_err(|err| PersistenceError::UncheckedError(Box::new(err)))?;
 
         Ok(post)
+    }
+
+    async fn exists_with_id(&self, id: &uuid::Uuid) -> Result<bool, PersistenceError> {
+        sqlx::query!(
+            "SELECT COUNT(*) FROM app_posts AS post WHERE post.id = $1::uuid",
+            id
+        )
+        .fetch_one(self.pool)
+        .await
+        .map_err(|err| PersistenceError::UncheckedError(Box::new(err)))
+        .map(|record| record.count.unwrap_or_default() > 0)
+    }
+
+    async fn exists_with_title(&self, title: &String) -> Result<bool, PersistenceError> {
+        sqlx::query!(
+            "SELECT COUNT(*) FROM app_posts AS post WHERE post.title = $1::varchar",
+            title
+        )
+        .fetch_one(self.pool)
+        .await
+        .map_err(|err| PersistenceError::UncheckedError(Box::new(err)))
+        .map(|record| record.count.unwrap_or_default() > 0)
     }
 }

@@ -8,10 +8,10 @@ use crate::{
     domain::{persistence::PersistenceError, posts::Post},
 };
 
-#[derive(Debug, serde::Deserialize)]
-struct CreatePostDTO {
-    id: Option<uuid::Uuid>,
-}
+// #[derive(Debug, serde::Deserialize)]
+// struct CreatePostDTO {
+//     id: Option<uuid::Uuid>,
+// }
 
 #[axum::debug_handler]
 pub async fn create_post_route(
