@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sqlx::{Pool, Postgres};
 
 use crate::domain::{
-    persistence::PersistenceError,
+    error::ApplicationLayerError,
     posts::{Post, PostRepository, ValidatedCreatePostDTO},
 };
 
@@ -22,7 +22,7 @@ impl<'a> PostRepository for PersistentPostRepository<'a> {
     async fn persist(
         &mut self,
         create_post_dto: ValidatedCreatePostDTO,
-    ) -> Result<Post, PersistenceError> {
+    ) -> Result<Post, ApplicationLayerError> {
         let post = Post::new(create_post_dto);
 
         sqlx::query!(
@@ -38,30 +38,30 @@ impl<'a> PostRepository for PersistentPostRepository<'a> {
         )
         .execute(self.pool)
         .await
-        .map_err(|err| PersistenceError::UncheckedError(Box::new(err)))?;
+        .map_err(|err| ApplicationLayerError::PersistenceError(Box::new(err)))?;
 
         Ok(post)
     }
 
-    async fn exists_with_id(&self, id: &uuid::Uuid) -> Result<bool, PersistenceError> {
+    async fn exists_with_id(&self, id: &uuid::Uuid) -> Result<bool, ApplicationLayerError> {
         sqlx::query!(
             "SELECT COUNT(*) FROM app_posts AS post WHERE post.id = $1::uuid",
             id
         )
         .fetch_one(self.pool)
         .await
-        .map_err(|err| PersistenceError::UncheckedError(Box::new(err)))
+        .map_err(|err| ApplicationLayerError::PersistenceError(Box::new(err)))
         .map(|record| record.count.unwrap_or_default() > 0)
     }
 
-    async fn exists_with_title(&self, title: &String) -> Result<bool, PersistenceError> {
+    async fn exists_with_title(&self, title: &String) -> Result<bool, ApplicationLayerError> {
         sqlx::query!(
             "SELECT COUNT(*) FROM app_posts AS post WHERE post.title = $1::varchar",
             title
         )
         .fetch_one(self.pool)
         .await
-        .map_err(|err| PersistenceError::UncheckedError(Box::new(err)))
+        .map_err(|err| ApplicationLayerError::PersistenceError(Box::new(err)))
         .map(|record| record.count.unwrap_or_default() > 0)
     }
 }

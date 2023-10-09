@@ -6,7 +6,7 @@ pub use post_repository::PostRepository;
 
 use super::validation::ConstraintViolation;
 
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize)]
 pub struct Post {
     pub id: uuid::Uuid,
     pub title: String,
@@ -51,7 +51,7 @@ impl fmt::Display for PostTitle {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, serde::Deserialize)]
 pub struct CreatePostDTO {
     pub id: Option<uuid::Uuid>,
     pub title: String,
