@@ -11,4 +11,5 @@ pub trait PostRepository {
     ) -> Result<Post, ApplicationLayerError>;
     async fn exists_with_id(&self, id: &uuid::Uuid) -> Result<bool, ApplicationLayerError>;
     async fn exists_with_title(&self, title: &String) -> Result<bool, ApplicationLayerError>;
+    async fn list_posts(&self, skip: i32, take: i32) -> Result<Vec<Post>, ApplicationLayerError>;
 }

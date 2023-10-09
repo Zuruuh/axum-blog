@@ -13,3 +13,9 @@ pub async fn create_post(
 
     post_repository.persist(create_post_dto).await
 }
+
+pub async fn list_posts(
+    post_repository: &mut impl PostRepository,
+) -> Result<Vec<Post>, ApplicationLayerError> {
+    post_repository.list_posts(0, 10).await
+}

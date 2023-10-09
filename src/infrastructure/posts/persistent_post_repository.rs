@@ -6,7 +6,6 @@ use crate::domain::{
     posts::{Post, PostRepository, ValidatedCreatePostDTO},
 };
 
-#[derive(Clone)]
 pub struct PersistentPostRepository<'a> {
     pool: &'a Pool<Postgres>,
 }
@@ -63,5 +62,17 @@ impl<'a> PostRepository for PersistentPostRepository<'a> {
         .await
         .map_err(|err| ApplicationLayerError::PersistenceError(Box::new(err)))
         .map(|record| record.count.unwrap_or_default() > 0)
+    }
+
+    async fn list_posts(&self, skip: i32, take: i32) -> Result<Vec<Post>, ApplicationLayerError> {
+        sqlx::query_as!(
+            Post,
+            "SELECT * FROM app_posts AS post LIMIT $1::int OFFSET $2::int",
+            take,
+            skip
+        )
+        .fetch_all(self.pool)
+        .await
+        .map_err(|err| ApplicationLayerError::PersistenceError(Box::new(err)))
     }
 }

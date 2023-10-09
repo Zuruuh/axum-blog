@@ -21,7 +21,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let app = Router::new()
         .route("/", get(infrastructure::misc::health_route))
-        .route("/posts", post(infrastructure::posts::create_post_route))
+        .route("/posts", post(infrastructure::posts::create_post_action))
+        .route("/posts", get(infrastructure::posts::list_posts_action))
         // .route("/quotes", post(handlers::create_quote))
         // .route("/quotes", get(handlers::read_quotes))
         // .route("/quotes/:id", put(handlers::update_quote))
