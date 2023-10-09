@@ -4,7 +4,7 @@ mod infrastructure;
 
 use std::env;
 
-use axum::routing::{get, post, Router};
+use axum::routing::{delete, get, post, Router};
 use sqlx::postgres::PgPoolOptions;
 
 #[tokio::main]
@@ -23,10 +23,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/", get(infrastructure::misc::health_route))
         .route("/posts", post(infrastructure::posts::create_post_action))
         .route("/posts", get(infrastructure::posts::list_posts_action))
-        // .route("/quotes", post(handlers::create_quote))
-        // .route("/quotes", get(handlers::read_quotes))
+        .route(
+            "/posts/:post_id",
+            get(infrastructure::posts::find_post_action),
+        )
+        .route(
+            "/posts/:post_id",
+            delete(infrastructure::posts::delete_post_action),
+        )
         // .route("/quotes/:id", put(handlers::update_quote))
-        // .route("/quotes/:id", delete(handlers::delete_quote))
         .with_state(pool);
 
     axum::Server::bind(&addr.parse().unwrap())

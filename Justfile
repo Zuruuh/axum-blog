@@ -10,6 +10,9 @@ RUSTFLAGS := "--cfg uuid_unstable"
 start:
     {{docker_compose_bin}} up -d
 
+stop:
+    {{docker_compose_bin}} down
+
 cargo *args:
     cargo {{args}}
 

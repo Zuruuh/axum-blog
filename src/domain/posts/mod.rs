@@ -4,7 +4,7 @@ mod post_repository;
 
 pub use post_repository::PostRepository;
 
-use super::validation::ConstraintViolation;
+use super::{error::ApplicationLayerError, validation::ConstraintViolation};
 
 #[derive(Debug, serde::Serialize)]
 pub struct Post {
@@ -38,7 +38,11 @@ impl PostTitle {
 
     pub fn new(title: String) -> Result<Self, String> {
         if title.len() > Self::TITLE_MAX_LEN || title.len() < Self::TITLE_MIN_LEN {
-            return Err("".into());
+            return Err(format!(
+                "Your title's length must be between {} and {} chars",
+                Self::TITLE_MIN_LEN,
+                Self::TITLE_MAX_LEN
+            ));
         }
 
         Ok(Self(title))
@@ -69,7 +73,7 @@ impl ValidatedCreatePostDTO {
     pub async fn new(
         dto: CreatePostDTO,
         post_repository: &mut impl PostRepository,
-    ) -> Result<Self, Vec<ConstraintViolation>> {
+    ) -> Result<Self, ApplicationLayerError> {
         let mut violations: Vec<ConstraintViolation> = vec![];
         if let Some(id) = dto.id {
             match post_repository.exists_with_id(&id).await {
@@ -80,9 +84,11 @@ impl ValidatedCreatePostDTO {
                             "id".into(),
                         ))
                     }
+
+                    Ok(())
                 }
-                Err(_) => unimplemented!(),
-            }
+                Err(err) => Err(err),
+            }?;
         }
 
         match post_repository.exists_with_title(&dto.title).await {
@@ -93,9 +99,11 @@ impl ValidatedCreatePostDTO {
                         "title".into(),
                     ))
                 }
+
+                Ok(())
             }
-            Err(_) => unimplemented!(),
-        }
+            Err(err) => Err(err),
+        }?;
 
         let title = PostTitle::new(dto.title);
         if let Err(title_err) = &title {
@@ -103,7 +111,7 @@ impl ValidatedCreatePostDTO {
         }
 
         if !violations.is_empty() {
-            return Err(violations);
+            return Err(ApplicationLayerError::ValidationError(violations));
         }
 
         Ok(Self {

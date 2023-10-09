@@ -64,7 +64,7 @@ impl<'a> PostRepository for PersistentPostRepository<'a> {
         .map(|record| record.count.unwrap_or_default() > 0)
     }
 
-    async fn list_posts(&self, skip: i32, take: i32) -> Result<Vec<Post>, ApplicationLayerError> {
+    async fn list_posts(&self, skip: &i32, take: &i32) -> Result<Vec<Post>, ApplicationLayerError> {
         sqlx::query_as!(
             Post,
             "SELECT * FROM app_posts AS post LIMIT $1::int OFFSET $2::int",
@@ -74,5 +74,24 @@ impl<'a> PostRepository for PersistentPostRepository<'a> {
         .fetch_all(self.pool)
         .await
         .map_err(|err| ApplicationLayerError::PersistenceError(Box::new(err)))
+    }
+
+    async fn find_post(&self, id: &uuid::Uuid) -> Result<Option<Post>, ApplicationLayerError> {
+        sqlx::query_as!(
+            Post,
+            "SELECT * FROM app_posts AS post WHERE id = $1::uuid",
+            id
+        )
+        .fetch_optional(self.pool)
+        .await
+        .map_err(|err| ApplicationLayerError::PersistenceError(Box::new(err)))
+    }
+
+    async fn delete_post(&mut self, id: &uuid::Uuid) -> Result<bool, ApplicationLayerError> {
+        sqlx::query!("DELETE FROM app_posts WHERE id = $1::uuid", id)
+            .execute(self.pool)
+            .await
+            .map_err(|err| ApplicationLayerError::PersistenceError(Box::new(err)))
+            .map(|e| e.rows_affected() == 1)
     }
 }
