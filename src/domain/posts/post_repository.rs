@@ -14,4 +14,5 @@ pub trait PostRepository {
     async fn list_posts(&self, skip: &i32, take: &i32) -> Result<Vec<Post>, ApplicationLayerError>;
     async fn find_post(&self, id: &uuid::Uuid) -> Result<Option<Post>, ApplicationLayerError>;
     async fn delete_post(&mut self, id: &uuid::Uuid) -> Result<bool, ApplicationLayerError>;
+    async fn update_post(&mut self, post: &Post) -> Result<bool, ApplicationLayerError>;
 }

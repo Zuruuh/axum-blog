@@ -4,7 +4,10 @@ mod post_repository;
 
 pub use post_repository::PostRepository;
 
-use super::{error::ApplicationLayerError, validation::ConstraintViolation};
+use super::{
+    error::ApplicationLayerError,
+    validation::{ConstraintViolation, ConstraintViolationLocation},
+};
 
 #[derive(Debug, serde::Serialize)]
 pub struct Post {
@@ -26,6 +29,12 @@ impl Post {
             created_at: now,
             last_update: now,
         }
+    }
+
+    pub fn update_from(&mut self, update_post_dto: &ValidatedUpdatePostDTO) {
+        self.title = update_post_dto.title.to_string();
+        self.content = update_post_dto.content.clone();
+        self.last_update = chrono::Utc::now();
     }
 }
 
@@ -82,6 +91,7 @@ impl ValidatedCreatePostDTO {
                         violations.push(ConstraintViolation::new(
                             "A post with the given ID already exists!".into(),
                             "id".into(),
+                            ConstraintViolationLocation::Body,
                         ))
                     }
 
@@ -97,6 +107,7 @@ impl ValidatedCreatePostDTO {
                     violations.push(ConstraintViolation::new(
                         "A post with the given title already exists!".into(),
                         "title".into(),
+                        ConstraintViolationLocation::Body,
                     ))
                 }
 
@@ -107,7 +118,11 @@ impl ValidatedCreatePostDTO {
 
         let title = PostTitle::new(dto.title);
         if let Err(title_err) = &title {
-            violations.push(ConstraintViolation::new(title_err.clone(), "title".into()));
+            violations.push(ConstraintViolation::new(
+                title_err.clone(),
+                "title".into(),
+                ConstraintViolationLocation::Body,
+            ));
         }
 
         if !violations.is_empty() {
@@ -116,6 +131,62 @@ impl ValidatedCreatePostDTO {
 
         Ok(Self {
             id: dto.id,
+            title: title.unwrap(),
+            content: dto.content,
+        })
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct UpdatePostDTO {
+    pub title: String,
+    pub content: String,
+}
+
+pub struct ValidatedUpdatePostDTO {
+    pub title: PostTitle,
+    pub content: String,
+}
+
+impl ValidatedUpdatePostDTO {
+    pub async fn new(
+        dto: UpdatePostDTO,
+        post: &Post,
+        post_repository: &mut impl PostRepository,
+    ) -> Result<Self, ApplicationLayerError> {
+        let mut violations: Vec<ConstraintViolation> = vec![];
+
+        if post.title.to_string() != dto.title {
+            match post_repository.exists_with_title(&dto.title).await {
+                Ok(exists) => {
+                    if exists {
+                        violations.push(ConstraintViolation::new(
+                            "A post with the given title already exists!".into(),
+                            "title".into(),
+                            ConstraintViolationLocation::Body,
+                        ))
+                    }
+
+                    Ok(())
+                }
+                Err(err) => Err(err),
+            }?;
+        }
+
+        let title = PostTitle::new(dto.title);
+        if let Err(title_err) = &title {
+            violations.push(ConstraintViolation::new(
+                title_err.clone(),
+                "title".into(),
+                ConstraintViolationLocation::Body,
+            ));
+        }
+
+        if !violations.is_empty() {
+            return Err(ApplicationLayerError::ValidationError(violations));
+        }
+
+        Ok(Self {
             title: title.unwrap(),
             content: dto.content,
         })

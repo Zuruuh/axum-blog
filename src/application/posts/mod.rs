@@ -1,7 +1,11 @@
 use crate::domain::{
     error::ApplicationLayerError,
     pagination::PaginationOptions,
-    posts::{CreatePostDTO, Post, PostRepository, ValidatedCreatePostDTO},
+    posts::{
+        CreatePostDTO, Post, PostRepository, UpdatePostDTO, ValidatedCreatePostDTO,
+        ValidatedUpdatePostDTO,
+    },
+    validation::ConstraintViolation,
 };
 
 pub async fn create_post(
@@ -37,4 +41,29 @@ pub async fn delete_post(
     post_id: &uuid::Uuid,
 ) -> Result<bool, ApplicationLayerError> {
     post_repository.delete_post(post_id).await
+}
+
+pub async fn update_post(
+    post_repository: &mut impl PostRepository,
+    post_id: &uuid::Uuid,
+    update_post_dto: UpdatePostDTO,
+) -> Result<Post, ApplicationLayerError> {
+    let mut post =
+        post_repository
+            .find_post(post_id)
+            .await?
+            .ok_or(ApplicationLayerError::ValidationError(vec![
+                ConstraintViolation::new(
+                    format!("Could not find post with id {post_id}!"),
+                    "post_id".into(),
+                    crate::domain::validation::ConstraintViolationLocation::Path,
+                ),
+            ]))?;
+    let update_post_dto =
+        ValidatedUpdatePostDTO::new(update_post_dto, &post, post_repository).await?;
+    post.update_from(&update_post_dto);
+
+    post_repository.update_post(&post).await?;
+
+    Ok(post)
 }

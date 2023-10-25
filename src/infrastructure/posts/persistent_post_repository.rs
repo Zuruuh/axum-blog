@@ -92,6 +92,20 @@ impl<'a> PostRepository for PersistentPostRepository<'a> {
             .execute(self.pool)
             .await
             .map_err(|err| ApplicationLayerError::PersistenceError(Box::new(err)))
-            .map(|e| e.rows_affected() == 1)
+            .map(|record| record.rows_affected() == 1)
+    }
+
+    async fn update_post(&mut self, post: &Post) -> Result<bool, ApplicationLayerError> {
+        sqlx::query!(
+            "UPDATE app_posts SET title = $1::varchar, content = $2::text, last_update = $3::timestamptz WHERE id = $4::uuid",
+            post.title,
+            post.content,
+            post.last_update,
+            post.id,
+        )
+        .execute(self.pool)
+        .await
+        .map_err(|err| ApplicationLayerError::PersistenceError(Box::new(err)))
+        .map(|record| record.rows_affected() == 1)
     }
 }

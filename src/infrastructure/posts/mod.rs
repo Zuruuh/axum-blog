@@ -9,8 +9,12 @@ pub use persistent_post_repository::PersistentPostRepository;
 use sqlx::PgPool;
 
 use crate::{
-    application::posts::{create_post, delete_post, find_post, list_posts},
-    domain::{error::ApplicationLayerError, pagination::PaginationOptions, posts::CreatePostDTO},
+    application::posts::{create_post, delete_post, find_post, list_posts, update_post},
+    domain::{
+        error::ApplicationLayerError,
+        pagination::PaginationOptions,
+        posts::{CreatePostDTO, UpdatePostDTO},
+    },
 };
 
 #[axum::debug_handler]
@@ -104,5 +108,28 @@ pub async fn delete_post_action(
         .map(|deleted| match deleted {
             true => (http::StatusCode::NO_CONTENT).into_response(),
             false => (http::StatusCode::NOT_FOUND).into_response(),
+        })
+}
+
+#[axum::debug_handler]
+pub async fn update_post_action(
+    State(pool): State<PgPool>,
+    Path(post_id): Path<uuid::Uuid>,
+    Json(update_post_dto): Json<UpdatePostDTO>,
+) -> Result<Response, Response> {
+    let mut post_repository = PersistentPostRepository::new(&pool);
+
+    update_post(&mut post_repository, &post_id, update_post_dto)
+        .await
+        .map(|post| (http::StatusCode::OK, Json(post)).into_response())
+        .map_err(|err| match err {
+            ApplicationLayerError::PersistenceError(_) => (
+                http::StatusCode::INTERNAL_SERVER_ERROR,
+                "Internal server error".to_string(),
+            )
+                .into_response(),
+            ApplicationLayerError::ValidationError(violations) => {
+                (http::StatusCode::BAD_REQUEST, Json(violations)).into_response()
+            }
         })
 }
