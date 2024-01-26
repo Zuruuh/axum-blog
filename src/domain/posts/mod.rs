@@ -5,7 +5,7 @@ mod post_repository;
 pub use post_repository::PostRepository;
 
 use super::{
-    error::ApplicationLayerError,
+    error::ApplicationError,
     validation::{ConstraintViolation, ConstraintViolationLocation},
 };
 
@@ -82,7 +82,7 @@ impl ValidatedCreatePostDTO {
     pub async fn new(
         dto: CreatePostDTO,
         post_repository: &mut impl PostRepository,
-    ) -> Result<Self, ApplicationLayerError> {
+    ) -> Result<Self, ApplicationError> {
         let mut violations: Vec<ConstraintViolation> = vec![];
         if let Some(id) = dto.id {
             match post_repository.exists_with_id(&id).await {
@@ -126,7 +126,7 @@ impl ValidatedCreatePostDTO {
         }
 
         if !violations.is_empty() {
-            return Err(ApplicationLayerError::ValidationError(violations));
+            return Err(ApplicationError::ValidationError(violations));
         }
 
         Ok(Self {
@@ -153,7 +153,7 @@ impl ValidatedUpdatePostDTO {
         dto: UpdatePostDTO,
         post: &Post,
         post_repository: &mut impl PostRepository,
-    ) -> Result<Self, ApplicationLayerError> {
+    ) -> Result<Self, ApplicationError> {
         let mut violations: Vec<ConstraintViolation> = vec![];
 
         if post.title.to_string() != dto.title {
@@ -183,7 +183,7 @@ impl ValidatedUpdatePostDTO {
         }
 
         if !violations.is_empty() {
-            return Err(ApplicationLayerError::ValidationError(violations));
+            return Err(ApplicationError::ValidationError(violations));
         }
 
         Ok(Self {

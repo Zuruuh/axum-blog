@@ -1,5 +1,5 @@
 use crate::domain::{
-    error::ApplicationLayerError,
+    error::ApplicationError,
     pagination::PaginationOptions,
     posts::{
         CreatePostDTO, Post, PostRepository, UpdatePostDTO, ValidatedCreatePostDTO,
@@ -11,7 +11,7 @@ use crate::domain::{
 pub async fn create_post(
     post_repository: &mut impl PostRepository,
     create_post_dto: CreatePostDTO,
-) -> Result<Post, ApplicationLayerError> {
+) -> Result<Post, ApplicationError> {
     let create_post_dto = ValidatedCreatePostDTO::new(create_post_dto, post_repository).await?;
 
     post_repository.persist(create_post_dto).await
@@ -20,7 +20,7 @@ pub async fn create_post(
 pub async fn list_posts(
     post_repository: &impl PostRepository,
     pagination_options: &PaginationOptions,
-) -> Result<Vec<Post>, ApplicationLayerError> {
+) -> Result<Vec<Post>, ApplicationError> {
     post_repository
         .list_posts(
             &pagination_options.skip.unwrap_or(0),
@@ -32,14 +32,14 @@ pub async fn list_posts(
 pub async fn find_post(
     post_repository: &impl PostRepository,
     post_id: &uuid::Uuid,
-) -> Result<Option<Post>, ApplicationLayerError> {
+) -> Result<Option<Post>, ApplicationError> {
     post_repository.find_post(post_id).await
 }
 
 pub async fn delete_post(
     post_repository: &mut impl PostRepository,
     post_id: &uuid::Uuid,
-) -> Result<bool, ApplicationLayerError> {
+) -> Result<bool, ApplicationError> {
     post_repository.delete_post(post_id).await
 }
 
@@ -47,12 +47,12 @@ pub async fn update_post(
     post_repository: &mut impl PostRepository,
     post_id: &uuid::Uuid,
     update_post_dto: UpdatePostDTO,
-) -> Result<Post, ApplicationLayerError> {
+) -> Result<Post, ApplicationError> {
     let mut post =
         post_repository
             .find_post(post_id)
             .await?
-            .ok_or(ApplicationLayerError::ValidationError(vec![
+            .ok_or(ApplicationError::ValidationError(vec![
                 ConstraintViolation::new(
                     format!("Could not find post with id {post_id}!"),
                     "post_id".into(),

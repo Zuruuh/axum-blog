@@ -1,3 +1,4 @@
+-- Add migration script here
 CREATE TABLE IF NOT EXISTS app_posts (
     id UUID PRIMARY KEY,
     title varchar(255) NOT NULL,
